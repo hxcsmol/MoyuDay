@@ -2,8 +2,6 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
-#include "SApplication.h"
-#include "SWindow.h"
 
 #define MAX_ROW_NUM 7
 #define MAX_COL_NUM 7
