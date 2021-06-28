@@ -14,7 +14,7 @@
 SDL2显示文字需要用ttf库，懒得搞这个了，故数字显示采用直接绘制方式。
 
 ## 发布
-不想费劲编译，可直接下载[Release](https://github.com/hxcsmol/MoyuDay/releases/tag/Ver1.0.0)版本
+不想费劲编译，可直接下载[Release](https://github.com/hxcsmol/MoyuDay/releases/tag/Ver1.0.1)版本
 
 ## 操作
 鼠标左键拖动即可，右键旋转，中键翻转；
