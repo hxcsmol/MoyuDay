@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
+#include <cstring>
 
 #define MAX_ROW_NUM 7
 #define MAX_COL_NUM 7
@@ -9,82 +10,103 @@
 #define MAX_BLKROW_NUM 4
 #define MAX_BLKCOL_NUM 4
 
-static const uint8_t gGridMarks[MAX_ROW_NUM][MAX_COL_NUM] = {
-	{ 0,   0,   0,   0,   0,   0,   255 },
-	{ 0,   0,   0,   0,   0,   0,   255 },
-	{ 0,   0,   0,   0,   0,   0,   0   },
-	{ 0,   0,   0,   0,   0,   0,   0   },
-	{ 0,   0,   0,   0,   0,   0,   0   },
-	{ 0,   0,   0,   0,   0,   0,   0   },
-	{ 0,   0,   0,   255, 255, 255, 255 }
+static const uint8_t gGridMarks[MAX_ROW_NUM * MAX_COL_NUM] = {
+	0,   0,   0,   0,   0,   0,   255,
+	0,   0,   0,   0,   0,   0,   255,
+	0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   0,   0,   0,   0,
+	0,   0,   0,   255, 255, 255, 255
 };
-static const uint8_t gGridValues[MAX_ROW_NUM][MAX_COL_NUM] = {
-	{ 101, 102, 103, 104, 105, 106, 0   },
-	{ 107, 108, 109, 110, 111, 112, 0   },
-	{ 1,   2,   3,   4,   5,   6,   7   },
-	{ 8,   9,   10,  11,  12,  13,  14  },
-	{ 15,  16,  17,  18,  19,  20,  21  },
-	{ 22,  23,  24,  25,  26,  27,  28  },
-	{ 29,  30,  31,  0,   0,   0,   0   }
+static const uint8_t gGridValues[MAX_ROW_NUM * MAX_COL_NUM] = {
+	101, 102, 103, 104, 105, 106, 0,
+	107, 108, 109, 110, 111, 112, 0,
+	1,   2,   3,   4,   5,   6,   7,
+	8,   9,   10,  11,  12,  13,  14,
+	15,  16,  17,  18,  19,  20,  21,
+	22,  23,  24,  25,  26,  27,  28,
+	29,  30,  31,  0,   0,   0,   0
 };
-static const uint8_t gBlockData[MAX_BLK_NUM][MAX_BLKROW_NUM * MAX_BLKCOL_NUM] = {
+struct BlockInfo {
+	int rows;
+	int cols;
+	uint8_t data[MAX_BLKROW_NUM * MAX_BLKCOL_NUM];
+};
+static const BlockInfo gBlockInfos[MAX_BLK_NUM] = {
 	{
-		1, 1, 0, 0,
-		0, 1, 0, 0,
-		1, 1, 0, 0
+		2, 3,
+		{
+			1, 1, 1,
+			1, 1, 1
+		}
 	},
 	{
-		1, 1, 1, 0,
-		1, 1, 1, 0,
-		0, 0, 0, 0
+		3, 2,
+		{
+			1, 1,
+			0, 1,
+			1, 1
+		}
 	},
 	{
-		1, 0, 0, 0,
-		1, 1, 0, 0,
-		1, 1, 0, 0,
-		0, 0, 0, 0
+		3, 3,
+		{
+			0, 0, 1,
+			0, 0, 1,
+			1, 1, 1
+		}
 	},
 	{
-		0, 0, 1, 0,
-		1, 1, 1, 0,
-		1, 0, 0, 0,
-		0, 0, 0, 0
+		4, 2,
+		{
+			1, 1,
+			1, 0,
+			1, 0,
+			1, 0
+		}
 	},
 	{
-		0, 0, 1, 0,
-		0, 0, 1, 0,
-		1, 1, 1, 0,
-		0, 0, 0, 0
+		3, 2,
+		{
+			1, 0,
+			1, 1,
+			1, 1
+		}
 	},
 	{
-		1, 1, 0, 0,
-		1, 0, 0, 0,
-		1, 0, 0, 0,
-		1, 0, 0, 0
+		3, 3,
+		{
+			0, 0, 1,
+			1, 1, 1,
+			1, 0, 0
+		}
 	},
 	{
-		1, 1, 1, 1,
-		0, 1, 0, 0,
-		0, 0, 0, 0,
-		0, 0, 0, 0
+		2, 4,
+		{
+			1, 1, 1, 1,
+			0, 1, 0, 0
+		}
 	},
 	{
-		1, 1, 1, 0,
-		0, 0, 1, 1,
-		0, 0, 0, 0,
-		0, 0, 0, 0
+		2, 4,
+		{
+			1, 1, 1, 0,
+			0, 0, 1, 1
+		}
 	}
 };
 
 /**
-		1
-	  -----
-	 4|   |5
-	  | 2 | 
-	  -----
-	 6|   |7
-	  | 3 |
-	  -----
+*       1
+*     -----
+*    4|   |5
+*     | 2 | 
+*     -----
+*    6|   |7
+*     | 3 |
+*     -----
  */
 static const uint8_t gNumberPiex[10] = {
 	/* 7654321 */
@@ -119,7 +141,7 @@ struct Block {
 	int ypos;
 	Color clr;
 	SDL_Rect rect;
-	uint8_t data[MAX_BLKROW_NUM * MAX_BLKCOL_NUM];
+	BlockInfo info;
 };
 
 static SDL_Window* gWindow = nullptr;
@@ -144,7 +166,34 @@ static const Color gBlockClrs[MAX_BLK_NUM] = {
 	{ 0xa9, 0x81, 0x75, 0xff }
 };
 
-void drawNumber(SDL_Renderer& render, int x, int y, int size, uint8_t val)
+#define MAX_RESULT_NUM 256
+struct Result {
+	BlockInfo blkData[MAX_BLK_NUM];
+	uint8_t gridData[MAX_COL_NUM * MAX_ROW_NUM];
+};
+struct Branch {
+	int idx;
+	int num;
+	int firstCols[8];
+	BlockInfo data[8];
+};
+struct Solve {
+	bool enabled;
+	int month;
+	int day;
+	SDL_Rect checkRect;
+	SDL_Rect preRect;
+	SDL_Rect nextRect;
+	uint8_t gridData[MAX_COL_NUM * MAX_ROW_NUM];
+	uint32_t blkMask;
+	Branch blkData[MAX_BLK_NUM];
+	int resultIdx;
+	int resultNum;
+	Result results[MAX_RESULT_NUM];
+};
+static Solve gSolve = { 0 };
+
+void drawNumber(SDL_Renderer* render, int x, int y, int size, uint8_t val)
 {
 	if(val < 10)
 	{
@@ -155,61 +204,70 @@ void drawNumber(SDL_Renderer& render, int x, int y, int size, uint8_t val)
 		uint8_t m = gNumberPiex[val];
 		if(m & (1u << 0u))
 		{
-			SDL_RenderDrawLine(&render, x, y, x + a, y);
+			SDL_RenderDrawLine(render, x, y, x + a, y);
 		}
 		if(m & (1u << 1u))
 		{
-			SDL_RenderDrawLine(&render, x, y + a, x + a, y + a);
+			SDL_RenderDrawLine(render, x, y + a, x + a, y + a);
 		}
 		if(m & (1u << 2u))
 		{
-			SDL_RenderDrawLine(&render, x, y + a + a, x + a, y + a + a);
+			SDL_RenderDrawLine(render, x, y + a + a, x + a, y + a + a);
 		}
 		if(m & (1u << 3u))
 		{
-			SDL_RenderDrawLine(&render, x, y, x, y + a);
+			SDL_RenderDrawLine(render, x, y, x, y + a);
 		}
 		if(m & (1u << 4u))
 		{
-			SDL_RenderDrawLine(&render, x + a, y, x + a, y + a);
+			SDL_RenderDrawLine(render, x + a, y, x + a, y + a);
 		}
 		if(m & (1u << 5u))
 		{
-			SDL_RenderDrawLine(&render, x, y + a, x, y + a + a);
+			SDL_RenderDrawLine(render, x, y + a, x, y + a + a);
 		}
 		if(m & (1u << 6u))
 		{
-			SDL_RenderDrawLine(&render, x + a, y + a, x + a, y + a + a);
+			SDL_RenderDrawLine(render, x + a, y + a, x + a, y + a + a);
 		}
 	}
 }
-void drawText(SDL_Renderer& render, const SDL_Rect& rect, uint8_t val)
+int drawUint(SDL_Renderer* render, int x, int y, int size, uint32_t val)
 {
-	const int a = (rect.w < rect.h ? rect.w : rect.h) / 5;
+	const int a = (size - 2) / 2;
+	x += a / 2;
+	y += 1;
+	int n = 0;
 	if(val < 10)
 	{
-		int x = rect.x + (rect.w - a) / 2;
-		int y = rect.y + (rect.h - a * 2) / 2;
 		drawNumber(render, x, y, a * 2, val);
+		n = a * 2;
 	}
 	else if(val < 100)
 	{
-		int x = rect.x + (rect.w - a * 3) / 2;
-		int y = rect.y + (rect.h - a * 2) / 2;
 		drawNumber(render, x, y, a * 2, val / 10);
 		drawNumber(render, x + a + a / 2, y, a * 2, val % 10);
+		n = a * 4;
 	}
+	else if(val < 1000)
+	{
+		drawNumber(render, x, y, a * 2, val / 100);
+		drawNumber(render, x + 3 * a / 2, y, a * 2, (val / 10) % 10);
+		drawNumber(render, x + 3 * a, y, a * 2, val % 10);
+		n = a * 6;
+	}
+	return n;
 }
-void drawGrid(SDL_Renderer& render, const SDL_Rect& rect)
+void drawGrid(SDL_Renderer* render, const SDL_Rect* rect)
 {
 	const int a = gCellSize;
-	int x0 = rect.x + (rect.w - a * MAX_COL_NUM) / 2;
-	int y0 = rect.y + (rect.h - a * MAX_ROW_NUM) / 2;
+	int x0 = rect->x + (rect->w - a * MAX_COL_NUM) / 2;
+	int y0 = rect->y + (rect->h - a * MAX_ROW_NUM) / 2;
 
 	{
 		SDL_Rect rc = { x0, y0, a * MAX_COL_NUM + 1, a * MAX_ROW_NUM + 1 };
-		SDL_SetRenderDrawColor(&render, 100, 100, 100, 255);
-		SDL_RenderDrawRect(&render, &rc);
+		SDL_SetRenderDrawColor(render, 100, 100, 100, 255);
+		SDL_RenderDrawRect(render, &rc);
 	}
 
 	for(int c = 0, x = x0; c < MAX_COL_NUM; ++c, x += a)
@@ -222,50 +280,51 @@ void drawGrid(SDL_Renderer& render, const SDL_Rect& rect)
 				continue;
 			}
 			SDL_Rect rc = { x, y, a, a };
+			m = m >= 200 ? 0 : m;
 			if(0 != m)
 			{
 				const Color& clr = gBlockClrs[(m - 1) % MAX_BLK_NUM];
-				SDL_SetRenderDrawColor(&render, clr.r, clr.g, clr.b, clr.a);
+				SDL_SetRenderDrawColor(render, clr.r, clr.g, clr.b, clr.a);
 			}
 			else
 			{
-				SDL_SetRenderDrawColor(&render, 255, 255, 255, 255);
+				SDL_SetRenderDrawColor(render, 255, 255, 255, 255);
 			}
-			SDL_RenderFillRect(&render, &rc);
+			SDL_RenderFillRect(render, &rc);
 
-			SDL_SetRenderDrawColor(&render, 0, 0, 0, 255);
+			SDL_SetRenderDrawColor(render, 0, 0, 0, 255);
 			rc.w++;
 			rc.h++;
-			SDL_RenderDrawRect(&render, &rc);
-			uint8_t v = gGridValues[r][c];
+			SDL_RenderDrawRect(render, &rc);
+			uint8_t v = gGridValues[r * MAX_COL_NUM + c];
 			if(0 == m)
 			{
 				if(v >= 100)
 				{
-					SDL_SetRenderDrawColor(&render, 255, 0, 0, 255);
+					SDL_SetRenderDrawColor(render, 255, 0, 0, 255);
 					v %= 100;
 				}
-				drawText(render, rc, v);
+				drawUint(render, v > 9 ? rc.x + rc.h / 8 : rc.x + rc.h / 4, rc.y + rc.h / 4, rc.h / 2, v);
 			}
 		}
 	}
 }
-void drawBlock(SDL_Renderer& render, const SDL_Rect& rect, const uint8_t* data)
+void drawBlock(SDL_Renderer* render, const SDL_Rect* rect, int rows, int cols, const uint8_t* data)
 {
 	const int a = gCellSize;
-	int x0 = rect.x + (rect.w - a * 4) / 2;
-	int y0 = rect.y + (rect.h - a * 4) / 2;
+	int x0 = rect->x + (rect->w - a * 4) / 2;
+	int y0 = rect->y + (rect->h - a * 4) / 2;
 
-	for(int c = 0, x = x0; c < MAX_BLKCOL_NUM; ++c, x += a)
+	for(int c = 0, x = x0; c < cols; ++c, x += a)
 	{
-		for(int r = 0, y = y0; r < MAX_BLKROW_NUM; ++r, y += a)
+		for(int r = 0, y = y0; r < rows; ++r, y += a)
 		{
-			if(0 == data[r * MAX_BLKCOL_NUM + c])
+			if(0 == data[r * cols + c])
 			{
 				continue;
 			}
 			SDL_Rect rc = { x, y, a, a };
-			SDL_RenderFillRect(&render, &rc);
+			SDL_RenderFillRect(render, &rc);
 		}
 	}
 }
@@ -300,14 +359,14 @@ void updateWindow()
 		{
 			SDL_SetRenderDrawColor(gRender, 70, 70, 70, 255);
 		}
-		drawBlock(*gRender, blk.rect, blk.data);
+		drawBlock(gRender, &blk.rect, blk.info.rows, blk.info.cols, blk.info.data);
 	}
 	gGrid.rect.x = rect.x + gCellSize * gGrid.xpos;
 	gGrid.rect.y = rect.y + gCellSize * gGrid.ypos;
 	gGrid.rect.w = gCellSize * MAX_COL_NUM;
 	gGrid.rect.h = gCellSize * MAX_ROW_NUM;
 
-	drawGrid(*gRender, gGrid.rect);
+	drawGrid(gRender, &gGrid.rect);
 
 	if(gDropIndex >= 0)
 	{
@@ -316,15 +375,67 @@ void updateWindow()
 		SDL_Rect rc = blk.rect;
 		rc.x = gDropX + gDropCX;
 		rc.y = gDropY + gDropCY;
-		drawBlock(*gRender, rc, blk.data);
+		drawBlock(gRender, &rc, blk.info.rows, blk.info.cols, blk.info.data);
+	}
+
+	SDL_SetRenderDrawColor(gRender, 0, 0, 0, 255);
+	gSolve.checkRect.x = gGrid.rect.x;
+	gSolve.checkRect.y = gGrid.rect.y + gGrid.rect.h + gCellSize + gCellSize / 2;
+	gSolve.checkRect.w = gCellSize / 2;
+	gSolve.checkRect.h = gCellSize / 2;
+	SDL_RenderDrawRect(gRender, &gSolve.checkRect);
+	if(gSolve.enabled)
+	{
+		int x0 = gSolve.checkRect.x + gSolve.checkRect.w / 5;
+		int y0 = gSolve.checkRect.y + gSolve.checkRect.h / 3;
+		int x1 = gSolve.checkRect.x + gSolve.checkRect.w / 3;
+		int y1 = gSolve.checkRect.y + gSolve.checkRect.h * 4 / 5;
+		SDL_RenderDrawLine(gRender, x0, y0, x1, y1);
+		x0 = gSolve.checkRect.x + gSolve.checkRect.w * 4 / 5;
+		y0 = gSolve.checkRect.y + gSolve.checkRect.h / 5;
+		SDL_RenderDrawLine(gRender, x1, y1, x0, y0);
+
+		if(gSolve.resultNum > 0)
+		{
+			x0 = gSolve.checkRect.x + gSolve.checkRect.w + gCellSize / 4;
+			y0 = gSolve.checkRect.y;
+			gSolve.preRect.x = x0;
+			gSolve.preRect.y = y0;
+			gSolve.preRect.w = gSolve.checkRect.w;
+			gSolve.preRect.h = gSolve.checkRect.h;
+			x1 = gSolve.preRect.x + gSolve.preRect.w * 2 / 3;
+			y1 = gSolve.preRect.y + gSolve.preRect.h / 2;
+			SDL_RenderDrawLine(gRender, x1, y0, x0, y1);
+			SDL_RenderDrawLine(gRender, x0, y1, x1, gSolve.preRect.y + gSolve.preRect.h);
+
+			x0 = gSolve.preRect.x + gSolve.preRect.w;
+			x0 += drawUint(gRender, x0, y0, gCellSize / 2, gSolve.resultIdx + 1);
+			SDL_RenderDrawLine(gRender, x0, y0 + gCellSize / 2, x0 + gCellSize / 4, y0);
+			x0 += gCellSize / 4;
+			x0 += drawUint(gRender, x0, y0, gCellSize / 2, gSolve.resultNum);
+
+			x0 += gCellSize / 4;
+			gSolve.nextRect.x = x0;
+			gSolve.nextRect.y = y0;
+			gSolve.nextRect.w = gSolve.checkRect.w;
+			gSolve.nextRect.h = gSolve.checkRect.h;
+
+			x1 = gSolve.nextRect.x + gSolve.nextRect.w * 2 / 3;
+			y1 = gSolve.nextRect.y + gSolve.nextRect.h / 2;
+			SDL_RenderDrawLine(gRender, x0, y0, x1, y1);
+			SDL_RenderDrawLine(gRender, x1, y1, x0, gSolve.nextRect.y + gSolve.nextRect.h);
+		}
 	}
 
 	SDL_RenderPresent(gRender);
 }
-int findGridIndex(int x, int y)
+bool isInRect(int x, int y, const SDL_Rect* rect)
 {
-	if(x < gGrid.rect.x || x > gGrid.rect.x + gGrid.rect.w ||
-		y < gGrid.rect.y || y > gGrid.rect.y + gGrid.rect.h)
+	return x >= rect->x && x <= rect->x + rect->w && y >= rect->y && y <= rect->y + rect->h;
+}
+int testGridIndex(int x, int y)
+{
+	if(!isInRect(x, y, &gGrid.rect))
 	{
 		return -1;
 	}
@@ -334,19 +445,18 @@ int findGridIndex(int x, int y)
 	{
 		return -1;
 	}
-	if(255 == gGridMarks[r][c])
+	if(255 == gGridMarks[r * MAX_COL_NUM + c])
 	{
 		return -1;
 	}
 	return r * MAX_COL_NUM + c;
 }
-int findBlockIndex(int x, int y)
+int testBlockIndex(int x, int y)
 {
 	for(int i = 0; i < MAX_BLK_NUM; ++i)
 	{
 		Block& blk = gBlocks[i];
-		if(x > blk.rect.x && x < blk.rect.x + blk.rect.w &&
-			y > blk.rect.y && y < blk.rect.y + blk.rect.h)
+		if(isInRect(x, y, &blk.rect))
 		{
 			return i;
 		}
@@ -372,16 +482,16 @@ bool placeBlock(int index, int x, int y)
 {
 	Block& blk = gBlocks[index];
 	memcpy(gGrid.cache, gGrid.data, sizeof(gGrid.data));
-	for(int r = 0; r < MAX_BLKROW_NUM; ++r)
+	for(int r = 0; r < blk.info.rows; ++r)
 	{
-		for(int c = 0; c < MAX_BLKCOL_NUM; ++c)
+		for(int c = 0; c < blk.info.cols; ++c)
 		{
-			int pos = r * MAX_BLKCOL_NUM + c;
-			if(0 == blk.data[pos])
+			int pos = r * blk.info.cols + c;
+			if(0 == blk.info.data[pos])
 			{
 				continue;
 			}
-			int idx = findGridIndex(x + c * gCellSize + gCellSize / 4, y + r * gCellSize + gCellSize / 4);
+			int idx = testGridIndex(x + c * gCellSize + gCellSize / 4, y + r * gCellSize + gCellSize / 4);
 			if(idx < 0 || 0 != gGrid.data[idx])
 			{
 				return false;
@@ -421,65 +531,256 @@ int firstDataCol(const uint8_t* data, int rows, int cols, uint8_t val)
 	}
 	return 0;
 }
-void formatBlock(int index)
+void rotateBlock(BlockInfo* blk)
 {
-	Block& blk = gBlocks[index];
-	int r0 = firstDataRow(blk.data, MAX_BLKROW_NUM, MAX_BLKCOL_NUM, 1);
-	int c0 = firstDataCol(blk.data, MAX_BLKROW_NUM, MAX_BLKCOL_NUM, 1);
-	if(r0 > 0 || c0 > 0)
+	uint8_t buf[MAX_BLKCOL_NUM * MAX_BLKROW_NUM];
+	memcpy(buf, blk->data, sizeof(buf));
+	int rows = blk->rows;
+	blk->rows = blk->cols;
+	blk->cols = rows;
+	for(int r = 0; r < blk->rows; ++r)
 	{
-		uint8_t buf[MAX_BLKCOL_NUM * MAX_BLKROW_NUM];
-		memset(buf, 0, sizeof(buf));
-		for(int r = r0; r < MAX_BLKROW_NUM; ++r)
+		for(int c = 0; c < blk->cols; ++c)
 		{
-			for(int c = c0; c < MAX_BLKCOL_NUM; ++c)
+			blk->data[r * blk->cols + c] = buf[(blk->cols - 1 - c) * blk->rows + r];
+		}
+	}
+}
+void mirrorBlock(BlockInfo* blk)
+{
+	uint8_t buf[MAX_BLKCOL_NUM * MAX_BLKROW_NUM];
+	memcpy(buf, blk->data, sizeof(buf));
+	for(int r = 0; r < blk->rows; ++r)
+	{
+		for(int c = 0; c < blk->cols; ++c)
+		{
+			blk->data[r * blk->cols + c] = buf[r * blk->cols + blk->cols - c - 1];
+		}
+	}
+}
+bool solvePlace(Solve* s, int row, int col, int index, int branch)
+{
+	BlockInfo* blk = &s->blkData[index].data[branch];
+	if(row + blk->rows > MAX_ROW_NUM || col + blk->cols > MAX_COL_NUM)
+	{
+		return false;
+	}
+	const int num = blk->cols * blk->rows;
+	for(int i = 0; i < num; ++i)
+	{
+		if(0 == blk->data[i])
+		{
+			continue;
+		}
+		int r = i / blk->cols;
+		int c = i % blk->cols;
+		if(0 != s->gridData[(row + r) * MAX_COL_NUM + col + c])
+		{
+			return false;
+		}
+	}
+	for(int i = 0; i < num; ++i)
+	{
+		if(0 == blk->data[i])
+		{
+			continue;
+		}
+		int r = i / blk->cols;
+		int c = i % blk->cols;
+		s->gridData[(row + r) * MAX_COL_NUM + col + c] = index + 1;
+	}
+	return true;
+}
+void solveUnplace(Solve* s, int row, int col, int index, int branch)
+{
+	BlockInfo* blk = &s->blkData[index].data[branch];
+	const int num = blk->cols * blk->rows;
+	for(int i = 0; i < num; ++i)
+	{
+		if(0 == blk->data[i])
+		{
+			continue;
+		}
+		int r = i / blk->cols;
+		int c = i % blk->cols;
+		s->gridData[(row + r) * MAX_COL_NUM + col + c] = 0;
+	}
+}
+void solveGrid(Solve* s, int index)
+{
+	if(index >= MAX_COL_NUM * MAX_ROW_NUM)
+	{
+		if(s->resultNum < MAX_RESULT_NUM)
+		{
+			Result* res = &s->results[s->resultNum];
+			for(int k = 0; k < MAX_BLK_NUM; ++k)
 			{
-				buf[(r - r0) * MAX_BLKCOL_NUM + (c - c0)] = blk.data[r * MAX_BLKCOL_NUM + c];
+				memcpy(&res->blkData[k], &s->blkData[k].data[s->blkData[k].idx], sizeof(BlockInfo));
+			}
+			memcpy(res->gridData, s->gridData, sizeof(s->gridData));
+			s->resultNum++;
+		}
+		return;
+	}
+	if(0 != s->gridData[index])
+	{
+		solveGrid(s, index + 1);
+		return;
+	}
+	int r = index / MAX_COL_NUM;
+	int c = index % MAX_COL_NUM;
+	for(int i = 0; i < MAX_BLK_NUM; ++i)
+	{
+		const uint32_t msk = (1u << i);
+		if(0 != (s->blkMask & msk))
+		{
+			continue;
+		}
+		Branch* blk = &s->blkData[i];
+		for(int b = 0; b < blk->num; ++b)
+		{
+			int x = c - blk->firstCols[b];
+			if(x >= 0 && solvePlace(s, r, x, i, b))
+			{
+				if(0 != s->gridData[index])
+				{
+					blk->idx = b;
+					s->blkMask |= msk;
+					solveGrid(s, index + 1);
+					s->blkMask &= ~msk;
+				}
+				solveUnplace(s, r, x, i, b);
 			}
 		}
-		memcpy(blk.data, buf, sizeof(blk.data));
 	}
 }
-void rotateBlock(int index)
+
+void solve(int mon, int day)
 {
-	Block& blk = gBlocks[index];
-	static const uint8_t maps[] = {
-		12, 8, 4, 0,
-		13, 9, 5, 1,
-		14, 10, 6, 2,
-		15, 11, 7, 3
-	};
-	uint8_t buf[MAX_BLKCOL_NUM * MAX_BLKROW_NUM];
-	memcpy(buf, blk.data, sizeof(buf));
-	for(int r = 0; r < MAX_BLKROW_NUM; ++r)
+	memcpy(gSolve.gridData, gGridMarks, sizeof(gGridMarks));
+	for(int r = 0; r < 2; ++r)
 	{
-		for(int c = 0; c < MAX_BLKCOL_NUM; ++c)
+		for(int c = 0; c < MAX_COL_NUM; ++c)
 		{
-			int idx = r * MAX_BLKCOL_NUM + c;
-			blk.data[idx] = buf[maps[idx]];
+			if(100 + mon == gGridValues[r * MAX_COL_NUM + c])
+			{
+				gSolve.gridData[r * MAX_COL_NUM + c] = 200;
+				break;
+			}
 		}
 	}
-	formatBlock(index);
+	for(int r = 2; r < MAX_ROW_NUM; ++r)
+	{
+		for(int c = 0; c < MAX_COL_NUM; ++c)
+		{
+			if(day == gGridValues[r * MAX_COL_NUM + c])
+			{
+				gSolve.gridData[r * MAX_COL_NUM + c] = 200;
+				break;
+			}
+		}
+	}
+
+	gSolve.blkMask = 0;
+	gSolve.resultIdx = 0;
+	gSolve.resultNum = 0;
+	solveGrid(&gSolve, 0);
 }
-void mirrorBlock(int index)
+bool containsBlock(Branch* blk, const BlockInfo* dat)
 {
-	Block& blk = gBlocks[index];
-	uint8_t buf[MAX_BLKCOL_NUM * MAX_BLKROW_NUM];
-	memcpy(buf, blk.data, sizeof(buf));
-	for(int r = 0; r < MAX_BLKROW_NUM; ++r)
+	const int len = dat->cols * dat->rows;
+	for(int i = 0; i < blk->num; ++i)
 	{
-		for(int c = 0; c < MAX_BLKCOL_NUM; ++c)
+		BlockInfo* inf = &blk->data[i];
+		if(inf->cols == dat->cols && inf->rows == dat->rows && 0 == memcmp(blk->data[i].data, dat->data, len))
 		{
-			blk.data[r * MAX_BLKCOL_NUM + c] = buf[r * MAX_BLKCOL_NUM + MAX_BLKCOL_NUM - c - 1];
+			return true;
 		}
 	}
-	formatBlock(index);
+	return false;
+}
+int firstBlockCell(const BlockInfo* dat)
+{
+	for(int i = 0; i < dat->cols; ++i)
+	{
+		if(0 != dat->data[i])
+		{
+			return i;
+		}
+	}
+	return 0;
+}
+void initSolve()
+{
+	gSolve.enabled = false;
+	gSolve.month = 1;
+	gSolve.day = 1;
+	gSolve.resultNum = 0;
+	for(int i = 0; i < MAX_BLK_NUM; ++i)
+	{
+		const BlockInfo* tpl = &gBlockInfos[i];
+		int len = tpl->rows * tpl->cols;
+		Branch* blk = &gSolve.blkData[i];
+		BlockInfo tmp;
+		blk->idx = 0;
+		blk->num = 0;
+		memcpy(&tmp, tpl, sizeof(BlockInfo));
+		for(int k = 0; k < 4; ++k)
+		{
+			if(!containsBlock(blk, &tmp))
+			{
+				memcpy(&blk->data[blk->num], &tmp, sizeof(BlockInfo));
+				blk->firstCols[blk->num] = firstBlockCell(&tmp);
+				blk->num++;
+			}
+			rotateBlock(&tmp);
+		}
+		memcpy(&tmp, tpl, sizeof(BlockInfo));
+		mirrorBlock(&tmp);
+		for(int k = 4; k < 8; ++k)
+		{
+			if(!containsBlock(blk, &tmp))
+			{
+				memcpy(&blk->data[blk->num], &tmp, sizeof(BlockInfo));
+				blk->firstCols[blk->num] = firstBlockCell(&tmp);
+				blk->num++;
+			}
+			rotateBlock(&tmp);
+		}
+	}
+}
+void commitResult()
+{
+	if(gSolve.resultIdx < 0 || gSolve.resultIdx >= gSolve.resultNum)
+	{
+		memcpy(gGrid.data, gGridMarks, sizeof(gGrid.data));
+		for(int i = 0; i < MAX_BLK_NUM; ++i)
+		{
+			Block* blk = &gBlocks[i];
+			blk->state = 0;
+		}
+	}
+	else
+	{
+		Result* res = &gSolve.results[gSolve.resultIdx];
+		for(int i = 0; i < MAX_COL_NUM * MAX_ROW_NUM; ++i)
+		{
+			uint8_t val = res->gridData[i];
+			gGrid.data[i] = 200 == val ? 0 : val;
+		}
+		for(int i = 0; i < MAX_BLK_NUM; ++i)
+		{
+			Block* blk = &gBlocks[i];
+			memcpy(&blk->info, &res->blkData[i], sizeof(blk->info));
+			blk->state = 1;
+		}
+	}
 }
 void onMouseDown(int key, int x, int y)
 {
 	if(1 == key)
 	{
-		int idx = findBlockIndex(x, y);
+		int idx = testBlockIndex(x, y);
 		if(idx >= 0 && 0 == gBlocks[idx].state)
 		{
 			gDropX = x;
@@ -489,7 +790,7 @@ void onMouseDown(int key, int x, int y)
 			gDropIndex = idx;
 			updateWindow();
 		}
-		else if((idx = findGridIndex(x, y)) >= 0 && 0 != gGrid.data[idx])
+		else if((idx = testGridIndex(x, y)) >= 0 && 0 != gGrid.data[idx])
 		{
 			int r0 = firstDataRow(gGrid.data, MAX_ROW_NUM, MAX_COL_NUM, gGrid.data[idx]);
 			int c0 = firstDataCol(gGrid.data, MAX_ROW_NUM, MAX_COL_NUM, gGrid.data[idx]);
@@ -506,15 +807,15 @@ void onMouseDown(int key, int x, int y)
 	{
 		if(gDropIndex >= 0)
 		{
-			mirrorBlock(gDropIndex);
+			mirrorBlock(&gBlocks[gDropIndex].info);
 			updateWindow();
 		}
 		else
 		{
-			int idx = findBlockIndex(x, y);
+			int idx = testBlockIndex(x, y);
 			if(idx >= 0 && 0 == gBlocks[idx].state)
 			{
-				mirrorBlock(idx);
+				mirrorBlock(&gBlocks[idx].info);
 				updateWindow();
 			}
 		}
@@ -523,15 +824,15 @@ void onMouseDown(int key, int x, int y)
 	{
 		if(gDropIndex >= 0)
 		{
-			rotateBlock(gDropIndex);
+			rotateBlock(&gBlocks[gDropIndex].info);
 			updateWindow();
 		}
 		else
 		{
-			int idx = findBlockIndex(x, y);
+			int idx = testBlockIndex(x, y);
 			if(idx >= 0 && 0 == gBlocks[idx].state)
 			{
-				rotateBlock(idx);
+				rotateBlock(&gBlocks[idx].info);
 				updateWindow();
 			}
 		}
@@ -547,6 +848,58 @@ void onMouseUp(int key, int x, int y)
 			gDropIndex = -1;
 			updateWindow();
 		}
+		else if(isInRect(x, y, &gSolve.checkRect))
+		{
+			gSolve.enabled = !gSolve.enabled;
+			if(gSolve.enabled)
+			{
+				solve(gSolve.month, gSolve.day);
+				commitResult();
+			}
+			updateWindow();
+		}
+		else if(gSolve.enabled)
+		{
+			if(gSolve.resultIdx > 0 && isInRect(x, y, &gSolve.preRect))
+			{
+				gSolve.resultIdx--;
+				commitResult();
+				updateWindow();
+			}
+			else if(gSolve.resultIdx + 1 < gSolve.resultNum && isInRect(x, y, &gSolve.nextRect))
+			{
+				gSolve.resultIdx++;
+				commitResult();
+				updateWindow();
+			}
+		}
+	}
+	else if(3 == key)
+	{
+		if(gDropIndex < 0)
+		{
+			int idx = testGridIndex(x, y);
+			if(idx >= 0)
+			{
+				int day = gSolve.day;
+				int mon = gSolve.month;
+				int val = gGridValues[idx];
+				if(val < 100)
+				{
+					gSolve.day = val;
+				}
+				else if(val < 200)
+				{
+					gSolve.month = val - 100;
+				}
+				if(gSolve.enabled && (day != gSolve.day || mon != gSolve.month))
+				{
+					solve(gSolve.month, gSolve.day);
+					commitResult();
+					updateWindow();
+				}
+			}
+		}
 	}
 }
 void onMouseMove(int x, int y)
@@ -558,7 +911,6 @@ void onMouseMove(int x, int y)
 		updateWindow();
 	}
 }
-
 bool handleEvent(const SDL_Event& evt)
 {
 	bool ret = true;
@@ -607,7 +959,6 @@ bool handleEvent(const SDL_Event& evt)
 	}
 	return ret;
 }
-
 int main(int argc, char* argv[])
 {
 	SDL_Init(SDL_INIT_EVERYTHING);
@@ -632,7 +983,7 @@ int main(int argc, char* argv[])
 		Block& blk = gBlocks[i];
 		blk.state = 0;
 		blk.clr = gBlockClrs[i];
-		memcpy(blk.data, gBlockData[i], sizeof(blk.data));
+		memcpy(&blk.info, &gBlockInfos[i], sizeof(blk.info));
 	}
 	gBlocks[0].xpos = 1;
 	gBlocks[0].ypos = 1;
@@ -652,6 +1003,7 @@ int main(int argc, char* argv[])
 	gBlocks[7].ypos = 1 + (MAX_BLKROW_NUM + 1) * 2;
 	gGrid.xpos = 1 + MAX_BLKCOL_NUM + 1;
 	gGrid.ypos = 1 + MAX_BLKROW_NUM + 1;
+	initSolve();
 
 	updateWindow();
 
